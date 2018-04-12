@@ -11,15 +11,18 @@ logging.basicConfig(filename="data.log", level=logging.INFO, filemode="w")
 # Read in bearer token and user ID
 with open("conn_settings.txt", "r") as conn_settings:
     BEARER_TOKEN = conn_settings.readline().strip().split("=")[1]
-    USER_ID = conn_settings.readline().strip().split("=")[1]
+    DEVICE_ID = conn_settings.readline().strip().split("=")[1]
 
 print("getting")
-main_url = f"https://api-quiz.hype.space/shows/now?type=hq&userId={USER_ID}"
-headers = {"Authorization": f"Bearer {BEARER_TOKEN}",
-           "x-hq-client": "Android/1.3.0"}
-# "x-hq-stk": "MQ==",
-# "Connection": "Keep-Alive",
-# "User-Agent": "okhttp/3.8.0"}
+main_url = f"https://api.getloconow.com/v1/contests/"
+headers = {"User-Agent": "Ql7xwaHIItRhjySAjrCX6JmwsKXjL",
+           "X-APP-VERSION": "60",
+           "X-PLATFORM": "1",
+           "Device-Id": DEVICE_ID,
+           "Authorization": f"Bearer {BEARER_TOKEN}",
+           "Host": "api.getloconow.com",
+           "Connection": "Keep-Alive",
+           "Accept-Encoding": "gzip"}
 
 while True:
     print()
@@ -34,16 +37,13 @@ while True:
     logging.info(response_data)
 
     if "broadcast" not in response_data or response_data["broadcast"] is None:
-        if "error" in response_data and response_data["error"] == "Auth not valid":
+        if "detail" in response_data and response_data["detail"] == "Authentication credentials were not provided.":
             raise RuntimeError("Connection settings invalid")
         else:
             print("Show not on.")
-            next_time = datetime.strptime(response_data["nextShowTime"], "%Y-%m-%dT%H:%M:%S.000Z")
-            now = time.time()
-            offset = datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)
+            show_time = datetime.fromtimestamp(int(response_data["show_time"])/1000)
 
-            print(f"Next show time: {(next_time + offset).strftime('%Y-%m-%d %I:%M %p')}")
-            print("Prize: " + response_data["nextShowPrize"])
+            print(f"Next show time: {show_time.strftime('%Y-%m-%d %I:%M %p')}")
             time.sleep(5)
     else:
         socket = response_data["broadcast"]["socketUrl"]
